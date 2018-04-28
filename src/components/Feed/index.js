@@ -1,9 +1,11 @@
 import React, { Component } from 'react';
+import Notificacao from '../../api/Notificacao'
 import Post from '../Post'
 import {
   FlatList,
   AsyncStorage
 } from 'react-native';
+import InstaluraFetchService from '../../services/InstaluraFetchService';
 
 export default class Feed extends Component {
     constructor(){
@@ -14,18 +16,7 @@ export default class Feed extends Component {
     }
   
     componentDidMount(){
-      const uri = 'http://instalura-api.herokuapp.com/api/fotos';
-
-      AsyncStorage.getItem('token')
-      .then(token => {
-        return {
-          headers: new Headers({
-            "X-AUTH-TOKEN": token
-          })
-        };
-      })
-      .then(requestInfo => fetch(uri, requestInfo))
-      .then(response => response.json())
+      InstaluraFetchService.get('/fotos')
       .then(response => {
         this.setState({fotos: response})
       })
@@ -41,6 +32,7 @@ export default class Feed extends Component {
     }
   
     like = (idfoto) => {
+      const listaOriginal = this.state.fotos
       const foto = this.getFoto(idfoto)
   
       AsyncStorage.getItem('usuario')
@@ -64,20 +56,12 @@ export default class Feed extends Component {
         }
     
         this.updateFoto(fotoAtualizada)
-        return AsyncStorage.getItem('token')
       })
-      .then(token => {
-        const uri = `http://instalura-api.herokuapp.com/api/fotos/${idfoto}/like`;
-        const requestInfo = {
-          method: 'post',
-          headers: new Headers({
-            "X-AUTH-TOKEN": token,
-            "Content-type": "application/json"
-          })
-        }
-        return fetch(uri, requestInfo)
+      InstaluraFetchService.post(`/fotos/${idfoto}/like`)
+      .catch(e => {
+        this.setState({fotos: listaOriginal})
+        Notificacao.exibe('Ops','Não foi possível concluir a operação')
       })
-     
     }
   
   
@@ -88,23 +72,7 @@ export default class Feed extends Component {
   
       const foto = this.getFoto(idfoto)
   
-      AsyncStorage.getItem('token')
-      .then(token => {
-        const uri = `http://instalura-api.herokuapp.com/api/fotos/${idfoto}/comment`;
-        const requestInfo = {
-          method: 'post',
-          body: JSON.stringify({
-            texto: valorComentario
-          }),
-          headers: new Headers({
-            "X-AUTH-TOKEN": token,
-            "Content-type": "application/json"
-          })
-        }
-
-        return fetch(uri, requestInfo)
-      })
-      .then(response => response.json())
+      InstaluraFetchService.post(`/fotos/${idfoto}/comment`, {texto: valorComentario})
       .then(comentario => [...foto.comentarios,comentario])
       .then(novaLista => {
         
@@ -114,8 +82,10 @@ export default class Feed extends Component {
         }
 
         this.updateFoto(fotoAtualizada)
-
       })     
+      .catch(e => {
+        Notificacao.exibe('Ops','Algo deu errado')
+      })
     }
   
   

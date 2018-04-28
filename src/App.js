@@ -14,7 +14,8 @@ export default () => {
   .then(token =>{
     if(token){
       return {
-        screen: 'Feed'
+        screen: 'Feed',
+        title: 'Instalura'
       }
     }else{
       return {
